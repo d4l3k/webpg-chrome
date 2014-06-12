@@ -50,7 +50,8 @@
         "constants.js",
         "utils.js",
         "inline.js",
-        "webpg_overlay.js"
+        "webpg_overlay.js",
+        "api.js"
       ],
       "run_at": "document_end",
       "all_frames": true
