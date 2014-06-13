@@ -1,0 +1,8 @@
+<script src="api.js"></script>
+<script>
+    setTimeout(function(){
+        webpg.api.requestPermission(function(response){
+            console.log("RESPONSE", response);
+        });
+    },100);
+</script>

@@ -13,11 +13,32 @@ webpg.api = {
             Initializes the webpg.api object and adds the required event listeners.
     */
     init: function() {
+        webpg.api.addEndPoint("requestPermission", function(request, callback){
+            if(webpg.api.authorized === undefined){
+                var allow = confirm("Allow '"+window.location.host+"' to encrypt, decrypt, and sign using your PGP keys?");
+                webpg.api.authorized = allow;
+                callback({ status: allow });
+            } else {
+                callback({ error: 'Permission already requested.' });
+            }
+        });
         webpg.api.addEndPoint("encrypt", function(request, callback){
             var pgpRequest = {
               'data': request.body,
               'message_event': 'gmail',
               'msg': 'encrypt'
+            };
+            webpg.utils.sendRequest(pgpRequest,
+                function(response) {
+                    callback(response.result);
+                }
+            );
+        });
+        webpg.api.addEndPoint("symmetricEncrypt", function(request, callback){
+            var pgpRequest = {
+              'data': request.body,
+              'message_event': 'gmail',
+              'msg': 'symmetricEncrypt'
             };
             webpg.utils.sendRequest(pgpRequest,
                 function(response) {
@@ -35,18 +56,22 @@ webpg.api = {
     addEndPoint: function(name, callback){
         webpg.api.endpoints[name] = callback;
         document.addEventListener('webpg-'+name, function(event) {
-            var dataFromPage = event.detail;
-            var token = dataFromPage.token;
-            callback(dataFromPage.request, function(response){
-                var eventResponse = new CustomEvent('webpg-'+name+'-response', {
-                    'token': token,
-                    'response': response
+            if(webpg.api.authorized || name == 'requestPermission'){
+                var dataFromPage = event.detail;
+                console.log(event);
+                var token = dataFromPage.token;
+                callback(dataFromPage.request, function(response){
+                    var event_response = new CustomEvent('webpg-'+name+'-response-'+token, {detail: response});
+                    document.dispatchEvent(event_response);
                 });
-                document.dispatchEvent(eventReponse);
-            });
-            // var responseData = {"value":internalStorage[dataFromPage.key], "reqId":data.reqId};
-            // var fetchResponse = new CustomEvent('fetchResponse', {"detail":responseData});
-            // document.dispatchEvent(fetchResponse);
+            } else {
+                var event_response = new CustomEvent('webpg-'+name+'-response-'+token, {
+                    detail: {
+                        'error': 'Not authorized'
+                    }
+                });
+                document.dispatchEvent(event_response);
+            }
         });
     },
     endpoints: {}
